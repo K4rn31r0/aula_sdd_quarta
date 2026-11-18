@@ -8,7 +8,42 @@
   <body>
     <main>
       <h1>Lista de Compras</h1>
-      <p>Ainda não há listas.</p>
+      {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+
+      {% if confirmar_exclusao %}
+        <p>Deseja excluir a lista "{{ lista.name }}"?</p>
+        <form method="post" action="/listas/{{ lista.id }}/excluir">
+          <button type="submit">Confirmar exclusão</button>
+        </form>
+        <a href="/listas/{{ lista.id }}">Cancelar</a>
+      {% elif lista %}
+        <h2>{{ lista.name }}</h2>
+        <form method="post" action="/listas/{{ lista.id }}/renomear">
+          <label for="nome">Nome da lista</label>
+          <input id="nome" name="nome" maxlength="101" value="{{ form_name if form_name is defined else lista.name }}">
+          <button type="submit">Renomear</button>
+        </form>
+        <form method="get" action="/listas/{{ lista.id }}/excluir">
+          <button type="submit">Excluir</button>
+        </form>
+      {% else %}
+        {% if listas %}
+          <ul>
+            {% for item in listas %}
+              <li><a href="/listas/{{ item.id }}">{{ item.name }}</a></li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>Ainda não há listas.</p>
+          <a href="/listas/nova">Criar primeira lista</a>
+        {% endif %}
+
+        <form method="post" action="/listas/nova">
+          <label for="nome">Nome da lista</label>
+          <input id="nome" name="nome" maxlength="101" value="{{ form_name if form_name is defined else '' }}">
+          <button type="submit">Criar lista</button>
+        </form>
+      {% endif %}
     </main>
   </body>
 </html>
