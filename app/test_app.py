@@ -116,3 +116,42 @@ def test_conflito_de_item_preserva_nome_e_quantidade(client):
     assert "Já existe um item com este nome" in response.get_data(as_text=True)
     assert 'value=" leite "' in response.get_data(as_text=True)
     assert 'value="2 L"' in response.get_data(as_text=True)
+
+
+def test_pessoa_copia_reutiliza_e_limpa_comprados_com_confirmacao(client):
+    client.post("/listas/nova", data={"nome": "Compras"})
+    manager = client.application.config["LIST_MANAGER"]
+    lista_id = manager.get_by_name("Compras")["id"]
+    client.post(f"/listas/{lista_id}/itens", data={"nome": "Arroz", "quantidade": "1 kg"})
+    client.post(f"/listas/{lista_id}/itens", data={"nome": "Feijão", "quantidade": ""})
+    arroz = manager.get_items(lista_id)[0]
+    manager.set_item_purchased(lista_id, arroz["id"], True)
+
+    copia_response = client.post(f"/listas/{lista_id}/copiar")
+    assert copia_response.status_code == 302
+    copia = manager.get_by_name("Compras (cópia)")
+    assert copia is not None
+    assert all(not item["purchased"] for item in copia["items"])
+    assert manager.get_items(lista_id)[0]["purchased"] is True
+
+    reutilizar_confirmacao = client.get(f"/listas/{lista_id}/reutilizar")
+    assert "Deseja reutilizar" in reutilizar_confirmacao.get_data(as_text=True)
+    reutilizou = client.post(f"/listas/{lista_id}/reutilizar")
+    assert reutilizou.status_code == 302
+    assert all(not item["purchased"] for item in manager.get_items(lista_id))
+
+    manager.set_item_purchased(lista_id, arroz["id"], True)
+    limpar_confirmacao = client.get(f"/listas/{lista_id}/limpar-comprados")
+    assert "Deseja limpar" in limpar_confirmacao.get_data(as_text=True)
+    limpou = client.post(f"/listas/{lista_id}/limpar-comprados")
+    assert limpou.status_code == 302
+    assert [item["name"] for item in manager.get_items(lista_id)] == ["Feijão"]
+
+
+def test_operacoes_de_reutilizacao_sobre_lista_inexistente_nao_criam_dados(client):
+    inexistente = "/listas/id-inexistente"
+
+    assert client.post(f"{inexistente}/copiar").status_code == 302
+    assert client.post(f"{inexistente}/reutilizar").status_code == 302
+    assert client.post(f"{inexistente}/limpar-comprados").status_code == 302
+    assert client.application.config["LIST_MANAGER"].get_all() == []

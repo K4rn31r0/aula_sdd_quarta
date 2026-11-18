@@ -206,6 +206,59 @@ class ListManager:
             item for item in items if item.get("purchased", False)
         ]
 
+    def copy(self, list_id):
+        data = self._read()
+        origem = next(
+            (lista for lista in data.setdefault("lists", []) if lista["id"] == str(list_id)),
+            None,
+        )
+        if origem is None:
+            return None
+
+        base = f"{origem['name']} (cópia)"
+        name = base
+        numero = 2
+        while self._find_by_normalized_name(data, name) is not None:
+            name = f"{origem['name']} (cópia {numero})"
+            numero += 1
+
+        copied_items = [
+            {
+                "id": str(uuid.uuid4()),
+                "name": item["name"],
+                "quantity": item.get("quantity"),
+                "purchased": False,
+            }
+            for item in origem.get("items", [])
+        ]
+        copia = {"id": str(uuid.uuid4()), "name": name, "items": copied_items}
+        data["lists"].append(copia)
+        self._write(data)
+        return copia
+
+    def reuse(self, list_id):
+        data = self._read()
+        for lista in data.setdefault("lists", []):
+            if lista["id"] == str(list_id):
+                for item in lista.setdefault("items", []):
+                    item["purchased"] = False
+                self._write(data)
+                return lista
+        return None
+
+    def clear_purchased(self, list_id):
+        data = self._read()
+        for lista in data.setdefault("lists", []):
+            if lista["id"] == str(list_id):
+                lista["items"] = [
+                    item
+                    for item in lista.setdefault("items", [])
+                    if not item.get("purchased", False)
+                ]
+                self._write(data)
+                return lista
+        return None
+
     create_item = add_item
     update_item = edit_item
     mark_item_purchased = set_item_purchased
@@ -217,6 +270,9 @@ class ListManager:
     delete_list = delete
     open_list = get
     list_all = get_all
+    copy_list = copy
+    reuse_list = reuse
+    clear_purchased_items = clear_purchased
 
 
 def create_list(name, data_file=None):
@@ -233,3 +289,15 @@ def delete_list(list_id, data_file=None):
 
 def open_list(list_id, data_file=None):
     return ListManager(data_file).get(list_id)
+
+
+def copy_list(list_id, data_file=None):
+    return ListManager(data_file).copy(list_id)
+
+
+def reuse_list(list_id, data_file=None):
+    return ListManager(data_file).reuse(list_id)
+
+
+def clear_purchased_items(list_id, data_file=None):
+    return ListManager(data_file).clear_purchased(list_id)

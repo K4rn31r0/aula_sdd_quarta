@@ -16,6 +16,18 @@
           <button type="submit">Confirmar exclusão</button>
         </form>
         <a href="/listas/{{ lista.id }}">Cancelar</a>
+      {% elif confirmar_reutilizacao %}
+        <p>Deseja reutilizar a lista "{{ lista.name }}"?</p>
+        <form method="post" action="/listas/{{ lista.id }}/reutilizar">
+          <button type="submit">Confirmar reutilização</button>
+        </form>
+        <a href="/listas/{{ lista.id }}">Cancelar</a>
+      {% elif confirmar_limpeza %}
+        <p>Deseja limpar os itens comprados da lista "{{ lista.name }}"?</p>
+        <form method="post" action="/listas/{{ lista.id }}/limpar-comprados">
+          <button type="submit">Confirmar limpeza</button>
+        </form>
+        <a href="/listas/{{ lista.id }}">Cancelar</a>
       {% elif lista %}
         <h2>{{ lista.name }}</h2>
         <form method="post" action="/listas/{{ lista.id }}/renomear">
@@ -25,6 +37,15 @@
         </form>
         <form method="get" action="/listas/{{ lista.id }}/excluir">
           <button type="submit">Excluir</button>
+        </form>
+        <form method="post" action="/listas/{{ lista.id }}/copiar">
+          <button type="submit">Copiar lista</button>
+        </form>
+        <form method="get" action="/listas/{{ lista.id }}/reutilizar">
+          <button type="submit">Reutilizar lista</button>
+        </form>
+        <form method="get" action="/listas/{{ lista.id }}/limpar-comprados">
+          <button type="submit">Limpar comprados</button>
         </form>
 
         <h3>Itens</h3>

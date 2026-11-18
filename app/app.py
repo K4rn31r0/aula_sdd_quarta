@@ -80,6 +80,46 @@ def excluir_lista(list_id):
     return render_template("index.html", listas=get_manager().get_all(), lista=lista, confirmar_exclusao=True)
 
 
+@app.route("/listas/<list_id>/copiar", methods=["POST"])
+def copiar_lista(list_id):
+    copia = get_manager().copy(list_id)
+    if copia is None:
+        return redirect(url_for("index"))
+    return redirect(url_for("abrir_lista", list_id=copia["id"]))
+
+
+@app.route("/listas/<list_id>/reutilizar", methods=["GET", "POST"])
+def reutilizar_lista(list_id):
+    lista = get_manager().get(list_id)
+    if lista is None:
+        return redirect(url_for("index"))
+    if request.method == "POST":
+        get_manager().reuse(list_id)
+        return redirect(url_for("abrir_lista", list_id=list_id))
+    return render_template(
+        "index.html",
+        listas=get_manager().get_all(),
+        lista=lista,
+        confirmar_reutilizacao=True,
+    )
+
+
+@app.route("/listas/<list_id>/limpar-comprados", methods=["GET", "POST"])
+def limpar_comprados(list_id):
+    lista = get_manager().get(list_id)
+    if lista is None:
+        return redirect(url_for("index"))
+    if request.method == "POST":
+        get_manager().clear_purchased(list_id)
+        return redirect(url_for("abrir_lista", list_id=list_id))
+    return render_template(
+        "index.html",
+        listas=get_manager().get_all(),
+        lista=lista,
+        confirmar_limpeza=True,
+    )
+
+
 @app.route("/listas/<list_id>/itens", methods=["POST"])
 @app.route("/listas/<list_id>/itens/nova", methods=["POST"])
 @app.route("/listas/<list_id>/itens/adicionar", methods=["POST"])

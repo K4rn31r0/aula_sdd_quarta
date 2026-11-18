@@ -119,3 +119,78 @@ def test_editar_marca_desmarca_ordena_e_remove_itens(tmp_path):
 
     assert gerenciador.remove_item(lista["id"], feijao["id"]) is True
     assert gerenciador.get_sorted_items(lista["id"])[0]["name"] == "Arroz branco"
+
+
+def test_copiar_lista_mantem_itens_reinicia_compra_e_preserva_original(tmp_path):
+    gerenciador = ListManager(tmp_path / "listas.json")
+    original = gerenciador.create("Compras")
+    gerenciador.add_item(original["id"], "Arroz", "1 kg")
+    gerenciador.add_item(original["id"], "Feijão", None)
+    arroz = gerenciador.get_items(original["id"])[0]
+    gerenciador.set_item_purchased(original["id"], arroz["id"], True)
+
+    copia = gerenciador.copy(original["id"])
+
+    assert copia["name"] == "Compras (cópia)"
+    assert [item["name"] for item in gerenciador.get_items(copia["id"])] == ["Arroz", "Feijão"]
+    assert all(not item["purchased"] for item in gerenciador.get_items(copia["id"]))
+    assert gerenciador.get_items(original["id"])[0]["purchased"] is True
+    assert gerenciador.get(original["id"])["name"] == "Compras"
+
+
+def test_copiar_lista_usa_nomes_sequenciais_disponiveis(tmp_path):
+    gerenciador = ListManager(tmp_path / "listas.json")
+    original = gerenciador.create("Compras")
+
+    primeira = gerenciador.copy(original["id"])
+    segunda = gerenciador.copy(original["id"])
+    terceira = gerenciador.copy(original["id"])
+
+    assert [primeira["name"], segunda["name"], terceira["name"]] == [
+        "Compras (cópia)",
+        "Compras (cópia 2)",
+        "Compras (cópia 3)",
+    ]
+
+
+def test_reutilizar_lista_desmarca_itens_sem_alterar_itens(tmp_path):
+    gerenciador = ListManager(tmp_path / "listas.json")
+    lista = gerenciador.create("Compras")
+    arroz = gerenciador.add_item(lista["id"], "Arroz", "1 kg")
+    feijao = gerenciador.add_item(lista["id"], "Feijão", None)
+    gerenciador.set_item_purchased(lista["id"], arroz["id"], True)
+
+    reutilizada = gerenciador.reuse(lista["id"])
+
+    assert reutilizada["name"] == "Compras"
+    assert gerenciador.get_items(lista["id"]) == [
+        {"id": arroz["id"], "name": "Arroz", "quantity": "1 kg", "purchased": False},
+        {"id": feijao["id"], "name": "Feijão", "quantity": None, "purchased": False},
+    ]
+
+
+def test_limpar_comprados_remove_somente_itens_marcados(tmp_path):
+    gerenciador = ListManager(tmp_path / "listas.json")
+    lista = gerenciador.create("Compras")
+    arroz = gerenciador.add_item(lista["id"], "Arroz", "1 kg")
+    feijao = gerenciador.add_item(lista["id"], "Feijão", None)
+    gerenciador.set_item_purchased(lista["id"], arroz["id"], True)
+
+    limpa = gerenciador.clear_purchased(lista["id"])
+
+    assert limpa["name"] == "Compras"
+    assert gerenciador.get_items(lista["id"]) == [
+        {"id": feijao["id"], "name": "Feijão", "quantity": None, "purchased": False}
+    ]
+
+
+def test_operacoes_sobre_lista_inexistente_nao_criam_ou_corrompem_dados(tmp_path):
+    arquivo = tmp_path / "listas.json"
+    gerenciador = ListManager(arquivo)
+    gerenciador.create("Compras")
+    antes = json.loads(arquivo.read_text(encoding="utf-8"))
+
+    assert gerenciador.copy("inexistente") is None
+    assert gerenciador.reuse("inexistente") is None
+    assert gerenciador.clear_purchased("inexistente") is None
+    assert json.loads(arquivo.read_text(encoding="utf-8")) == antes
