@@ -51,3 +51,71 @@ def test_excluir_lista_por_identificacao(tmp_path):
 
     assert gerenciador.delete(lista["id"]) is True
     assert gerenciador.get(lista["id"]) is None
+
+
+def test_adicionar_item_normaliza_campos_e_persiste(tmp_path):
+    gerenciador = ListManager(tmp_path / "listas.json")
+    lista = gerenciador.create("Compras")
+
+    item = gerenciador.add_item(lista["id"], "  Arroz  ", "  2 kg  ")
+
+    assert item["name"] == "Arroz"
+    assert item["quantity"] == "2 kg"
+    assert item["purchased"] is False
+    assert gerenciador.get(lista["id"])["items"][0]["id"] == item["id"]
+
+
+@pytest.mark.parametrize("nome", ["", "   ", "x" * 101])
+def test_adicionar_item_rejeita_nome_vazio_ou_extenso(tmp_path, nome):
+    gerenciador = ListManager(tmp_path / "listas.json")
+    lista = gerenciador.create("Compras")
+
+    with pytest.raises(ValueError):
+        gerenciador.add_item(lista["id"], nome, "")
+
+
+def test_adicionar_item_rejeita_quantidade_extensa_e_normaliza_espacos(tmp_path):
+    gerenciador = ListManager(tmp_path / "listas.json")
+    lista = gerenciador.create("Compras")
+
+    with pytest.raises(ValueError, match="máximo 200"):
+        gerenciador.add_item(lista["id"], "Feijão", "x" * 201)
+
+    item = gerenciador.add_item(lista["id"], "Feijão", "   ")
+    assert item["quantity"] is None
+
+
+def test_itens_equivalentes_sao_impedidos_e_edicao_respeita_unicidade(tmp_path):
+    gerenciador = ListManager(tmp_path / "listas.json")
+    lista = gerenciador.create("Compras")
+    primeiro = gerenciador.add_item(lista["id"], "Leite", "1 L")
+
+    with pytest.raises(ValueError, match="Já existe um item"):
+        gerenciador.add_item(lista["id"], " leite ", "2 L")
+
+    segundo = gerenciador.add_item(lista["id"], "Pão", "")
+    with pytest.raises(ValueError, match="Já existe um item"):
+        gerenciador.edit_item(lista["id"], segundo["id"], " leite ", "3 L")
+
+    editado = gerenciador.edit_item(lista["id"], primeiro["id"], "  Leite integral  ", " ")
+    assert editado["name"] == "Leite integral"
+    assert editado["quantity"] is None
+
+
+def test_editar_marca_desmarca_ordena_e_remove_itens(tmp_path):
+    gerenciador = ListManager(tmp_path / "listas.json")
+    lista = gerenciador.create("Compras")
+    arroz = gerenciador.add_item(lista["id"], "Arroz", "1 kg")
+    feijao = gerenciador.add_item(lista["id"], "Feijão", None)
+
+    gerenciador.set_item_purchased(lista["id"], arroz["id"], True)
+    editado = gerenciador.edit_item(lista["id"], arroz["id"], "Arroz branco", "2 kg")
+
+    assert editado["purchased"] is True
+    assert [item["name"] for item in gerenciador.get_sorted_items(lista["id"])] == ["Feijão", "Arroz branco"]
+
+    gerenciador.set_item_purchased(lista["id"], arroz["id"], False)
+    assert [item["name"] for item in gerenciador.get_sorted_items(lista["id"])] == ["Arroz branco", "Feijão"]
+
+    assert gerenciador.remove_item(lista["id"], feijao["id"]) is True
+    assert gerenciador.get_sorted_items(lista["id"])[0]["name"] == "Arroz branco"

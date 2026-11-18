@@ -26,6 +26,54 @@
         <form method="get" action="/listas/{{ lista.id }}/excluir">
           <button type="submit">Excluir</button>
         </form>
+
+        <h3>Itens</h3>
+        {% if itens is defined and itens %}
+          <ul>
+            {% for item in itens %}
+              {% set comprado = item.purchased | default(false) %}
+              {% set mostrar = item.name %}
+              {% if edit_item_id is defined and edit_item_id == item.id %}
+                <li>
+                  <form method="post" action="/listas/{{ lista.id }}/itens/{{ item.id }}/editar">
+                    <label for="item-nome">Nome do item</label>
+                    <input id="item-nome" name="nome" maxlength="101" value="{{ item_form_name }}">
+                    <label for="item-quantidade">Quantidade</label>
+                    <input id="item-quantidade" name="quantidade" maxlength="201" value="{{ item_form_quantity }}">
+                    <button type="submit">Salvar item</button>
+                  </form>
+                  <a href="/listas/{{ lista.id }}">Cancelar</a>
+                </li>
+              {% else %}
+                <li{% if comprado %} style="text-decoration: line-through"{% endif %}>
+                  {{ item.name }}{% if item.quantity %} — {{ item.quantity }}{% endif %}
+                  <form method="get" action="/listas/{{ lista.id }}/itens/{{ item.id }}/editar" style="display:inline">
+                    <button type="submit">Editar</button>
+                  </form>
+                  <form method="post" action="/listas/{{ lista.id }}/itens/{{ item.id }}/comprado" style="display:inline">
+                    <input type="hidden" name="comprado" value="{{ 'false' if comprado else 'true' }}">
+                    <button type="submit">{{ 'Desmarcar' if comprado else 'Marcar como comprado' }}</button>
+                  </form>
+                  <form method="post" action="/listas/{{ lista.id }}/itens/{{ item.id }}/remover" style="display:inline">
+                    <button type="submit">Remover</button>
+                  </form>
+                </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>Nenhum item na lista.</p>
+        {% endif %}
+
+        {% if edit_item_id is not defined %}
+          <form method="post" action="/listas/{{ lista.id }}/itens">
+            <label for="novo-item-nome">Nome do item</label>
+            <input id="novo-item-nome" name="nome" maxlength="101" value="{{ item_form_name if item_form_name is defined else '' }}">
+            <label for="novo-item-quantidade">Quantidade</label>
+            <input id="novo-item-quantidade" name="quantidade" maxlength="201" value="{{ item_form_quantity if item_form_quantity is defined else '' }}">
+            <button type="submit">Adicionar item</button>
+          </form>
+        {% endif %}
       {% else %}
         {% if listas %}
           <ul>

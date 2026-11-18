@@ -64,3 +64,55 @@ def test_conflito_de_renomeacao_preserva_dado_e_exclusao_exige_confirmacao(clien
 
     confirmacao = client.get(f"/listas/{primeira_id}/excluir")
     assert "Deseja excluir" in confirmacao.get_data(as_text=True)
+
+
+def test_pessoa_adiciona_edita_marca_desmarca_e_remove_itens(client):
+    client.post("/listas/nova", data={"nome": "Compras"})
+    manager = client.application.config["LIST_MANAGER"]
+    lista_id = manager.get_by_name("Compras")["id"]
+
+    adicionou = client.post(f"/listas/{lista_id}/itens", data={"nome": " Arroz ", "quantidade": " 1 kg "})
+    assert adicionou.status_code == 302
+    item_id = manager.get_sorted_items(lista_id)[0]["id"]
+
+    pagina = client.get(f"/listas/{lista_id}")
+    texto = pagina.get_data(as_text=True)
+    assert "Arroz" in texto
+    assert "1 kg" in texto
+    assert "Nenhum item na lista" not in texto
+
+    marcou = client.post(f"/listas/{lista_id}/itens/{item_id}/comprado", data={"comprado": "true"})
+    assert marcou.status_code == 302
+
+    editou = client.post(
+        f"/listas/{lista_id}/itens/{item_id}/editar",
+        data={"nome": "Arroz integral", "quantidade": "2 kg"},
+    )
+    assert editou.status_code == 302
+    pagina = client.get(f"/listas/{lista_id}")
+    texto = pagina.get_data(as_text=True)
+    assert "Arroz integral" in texto
+    assert "Arroz integral" in texto
+
+    desmarcou = client.post(f"/listas/{lista_id}/itens/{item_id}/comprado", data={"comprado": "false"})
+    assert desmarcou.status_code == 302
+
+    removeu = client.post(f"/listas/{lista_id}/itens/{item_id}/remover")
+    assert removeu.status_code == 302
+    vazia = client.get(f"/listas/{lista_id}")
+    assert "Nenhum item na lista" in vazia.get_data(as_text=True)
+    assert "Adicionar item" in vazia.get_data(as_text=True)
+
+
+def test_conflito_de_item_preserva_nome_e_quantidade(client):
+    client.post("/listas/nova", data={"nome": "Compras"})
+    manager = client.application.config["LIST_MANAGER"]
+    lista_id = manager.get_by_name("Compras")["id"]
+    client.post(f"/listas/{lista_id}/itens", data={"nome": "Leite", "quantidade": "1 L"})
+
+    response = client.post(f"/listas/{lista_id}/itens", data={"nome": " leite ", "quantidade": "2 L"})
+
+    assert response.status_code == 200
+    assert "Já existe um item com este nome" in response.get_data(as_text=True)
+    assert 'value=" leite "' in response.get_data(as_text=True)
+    assert 'value="2 L"' in response.get_data(as_text=True)
