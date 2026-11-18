@@ -155,3 +155,57 @@ def test_operacoes_de_reutilizacao_sobre_lista_inexistente_nao_criam_dados(clien
     assert client.post(f"{inexistente}/reutilizar").status_code == 302
     assert client.post(f"{inexistente}/limpar-comprados").status_code == 302
     assert client.application.config["LIST_MANAGER"].get_all() == []
+
+
+def test_interface_inclui_css_proprio_sem_framework_javascript(client):
+    response = client.get("/")
+    html = response.get_data(as_text=True)
+
+    assert 'href="/static/styles.css"' in html
+    assert "<script" not in html
+    css = client.get("/static/styles.css")
+    assert css.status_code == 200
+    assert "@media" in css.get_data(as_text=True)
+
+
+def test_criacao_renomeacao_copia_reutilizacao_e_exclusao_exibem_sucesso(client):
+    criacao = client.post("/listas/nova", data={"nome": "Compras"}, follow_redirects=True)
+    assert "Lista criada com sucesso." in criacao.get_data(as_text=True)
+
+    manager = client.application.config["LIST_MANAGER"]
+    lista_id = manager.get_by_name("Compras")["id"]
+
+    renomeacao = client.post(
+        f"/listas/{lista_id}/renomear",
+        data={"nome": "Mercado"},
+        follow_redirects=True,
+    )
+    assert "Lista renomeada com sucesso." in renomeacao.get_data(as_text=True)
+
+    copia = client.post(f"/listas/{lista_id}/copiar", follow_redirects=True)
+    assert "Lista copiada com sucesso." in copia.get_data(as_text=True)
+
+    reutilizacao = client.post(f"/listas/{lista_id}/reutilizar", follow_redirects=True)
+    assert "Lista reutilizada com sucesso." in reutilizacao.get_data(as_text=True)
+
+    exclusao = client.post(f"/listas/{lista_id}/excluir", follow_redirects=True)
+    assert "Lista excluída com sucesso." in exclusao.get_data(as_text=True)
+
+
+def test_cancelar_criacao_e_renomeacao_nao_altera_dados(client):
+    inicio = client.get("/listas/nova")
+    html = inicio.get_data(as_text=True)
+    assert "Salvar" in html
+    assert 'href="/"' in html
+
+    client.post("/listas/nova", data={"nome": "Compras"})
+    manager = client.application.config["LIST_MANAGER"]
+    lista_id = manager.get_by_name("Compras")["id"]
+
+    renomear = client.get(f"/listas/{lista_id}/renomear")
+    html = renomear.get_data(as_text=True)
+    assert "Salvar" in html
+    assert f'href="/listas/{lista_id}"' in html
+
+    client.post(f"/listas/{lista_id}/renomear", data={"nome": "Mercado"})
+    assert manager.get(lista_id)["name"] == "Mercado"

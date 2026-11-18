@@ -1,0 +1,116 @@
+:root {
+  color-scheme: light;
+  --cor-fundo: #f4f7f5;
+  --cor-painel: #ffffff;
+  --cor-texto: #1f2933;
+  --cor-primaria: #176b4d;
+  --cor-secundaria: #e7eee9;
+  --cor-borda: #ccd7d0;
+  --cor-erro: #a4262c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+
+.container {
+  width: min(100% - 2rem, 760px);
+  margin: 0 auto;
+  padding: 1rem 0 2rem;
+}
+
+.cabecalho { margin-bottom: 1rem; }
+h1, h2, h3 { margin-top: 0; }
+
+.painel, .estado-vazio {
+  background: var(--cor-painel);
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.estado-vazio { text-align: center; }
+
+form { margin: 0; }
+label { display: block; margin-top: 0.75rem; font-weight: 700; }
+input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  padding: 0.65rem;
+  font-size: 1rem;
+}
+
+button, .botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  background: var(--cor-primaria);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.botao.secundario, button.secundario {
+  background: var(--cor-secundaria);
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda);
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.lista-itens {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  border-top: 1px solid var(--cor-borda);
+  padding: 0.75rem 0;
+}
+
+.item-acoes { align-items: center; }
+.comprado strong, .comprado span { text-decoration: line-through; color: #66736b; }
+
+.feedback {
+  border-left: 4px solid var(--cor-primaria);
+  background: #edf7f1;
+  padding: 0.25rem 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.erro {
+  border: 1px solid var(--cor-erro);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: var(--cor-erro);
+  background: #fff7f7;
+}
+
+.confirmacao form { margin-bottom: 0.75rem; }
+
+@media (min-width: 700px) {
+  .container { padding-top: 2rem; }
+  .painel, .estado-vazio { padding: 1.5rem; }
+  .item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+}

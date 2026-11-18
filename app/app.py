@@ -1,10 +1,11 @@
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, flash, redirect, render_template, request, url_for
 
 from .list_manager import DATA_FILE, ListManager
 
 
 app = Flask(__name__)
 app.config["LISTS_FILE"] = None
+app.secret_key = "lista-de-compras-local"
 
 
 def get_manager():
@@ -29,10 +30,17 @@ def nova_lista():
     if request.method == "POST":
         try:
             get_manager().create(raw_name)
+            flash("Lista criada com sucesso.")
             return redirect(url_for("index"))
         except ValueError as exc:
             error = str(exc)
-    return render_template("index.html", listas=get_manager().get_all(), form_name=raw_name, error=error)
+    return render_template(
+        "index.html",
+        listas=get_manager().get_all(),
+        form_name=raw_name,
+        error=error,
+        criar_lista=True,
+    )
 
 
 @app.route("/listas", methods=["POST"])
@@ -63,10 +71,18 @@ def renomear_lista(list_id):
     if request.method == "POST":
         try:
             lista = get_manager().rename(list_id, raw_name)
+            flash("Lista renomeada com sucesso.")
             return redirect(url_for("abrir_lista", list_id=list_id))
         except ValueError as exc:
             error = str(exc)
-    return render_template("index.html", listas=get_manager().get_all(), lista=lista, form_name=raw_name, error=error)
+    return render_template(
+        "index.html",
+        listas=get_manager().get_all(),
+        lista=lista,
+        form_name=raw_name,
+        error=error,
+        renomear_lista=True,
+    )
 
 
 @app.route("/listas/<list_id>/excluir", methods=["GET", "POST"])
@@ -76,6 +92,7 @@ def excluir_lista(list_id):
         return redirect(url_for("index"))
     if request.method == "POST":
         get_manager().delete(list_id)
+        flash("Lista excluída com sucesso.")
         return redirect(url_for("index"))
     return render_template("index.html", listas=get_manager().get_all(), lista=lista, confirmar_exclusao=True)
 
@@ -85,6 +102,7 @@ def copiar_lista(list_id):
     copia = get_manager().copy(list_id)
     if copia is None:
         return redirect(url_for("index"))
+    flash("Lista copiada com sucesso.")
     return redirect(url_for("abrir_lista", list_id=copia["id"]))
 
 
@@ -95,6 +113,7 @@ def reutilizar_lista(list_id):
         return redirect(url_for("index"))
     if request.method == "POST":
         get_manager().reuse(list_id)
+        flash("Lista reutilizada com sucesso.")
         return redirect(url_for("abrir_lista", list_id=list_id))
     return render_template(
         "index.html",

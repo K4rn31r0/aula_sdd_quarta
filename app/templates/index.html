@@ -4,114 +4,174 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Lista de Compras</title>
+    <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body>
-    <main>
-      <h1>Lista de Compras</h1>
-      {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+    <main class="container">
+      <header class="cabecalho">
+        <h1>Lista de Compras</h1>
+      </header>
+
+      {% with mensagens = get_flashed_messages() %}
+        {% if mensagens %}
+          <div class="feedback" role="status" aria-live="polite">
+            {% for mensagem in mensagens %}<p>{{ mensagem }}</p>{% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% if error %}<p class="erro" role="alert">{{ error }}</p>{% endif %}
 
       {% if confirmar_exclusao %}
-        <p>Deseja excluir a lista "{{ lista.name }}"?</p>
-        <form method="post" action="/listas/{{ lista.id }}/excluir">
-          <button type="submit">Confirmar exclusão</button>
-        </form>
-        <a href="/listas/{{ lista.id }}">Cancelar</a>
-      {% elif confirmar_reutilizacao %}
-        <p>Deseja reutilizar a lista "{{ lista.name }}"?</p>
-        <form method="post" action="/listas/{{ lista.id }}/reutilizar">
-          <button type="submit">Confirmar reutilização</button>
-        </form>
-        <a href="/listas/{{ lista.id }}">Cancelar</a>
-      {% elif confirmar_limpeza %}
-        <p>Deseja limpar os itens comprados da lista "{{ lista.name }}"?</p>
-        <form method="post" action="/listas/{{ lista.id }}/limpar-comprados">
-          <button type="submit">Confirmar limpeza</button>
-        </form>
-        <a href="/listas/{{ lista.id }}">Cancelar</a>
-      {% elif lista %}
-        <h2>{{ lista.name }}</h2>
-        <form method="post" action="/listas/{{ lista.id }}/renomear">
-          <label for="nome">Nome da lista</label>
-          <input id="nome" name="nome" maxlength="101" value="{{ form_name if form_name is defined else lista.name }}">
-          <button type="submit">Renomear</button>
-        </form>
-        <form method="get" action="/listas/{{ lista.id }}/excluir">
-          <button type="submit">Excluir</button>
-        </form>
-        <form method="post" action="/listas/{{ lista.id }}/copiar">
-          <button type="submit">Copiar lista</button>
-        </form>
-        <form method="get" action="/listas/{{ lista.id }}/reutilizar">
-          <button type="submit">Reutilizar lista</button>
-        </form>
-        <form method="get" action="/listas/{{ lista.id }}/limpar-comprados">
-          <button type="submit">Limpar comprados</button>
-        </form>
-
-        <h3>Itens</h3>
-        {% if itens is defined and itens %}
-          <ul>
-            {% for item in itens %}
-              {% set comprado = item.purchased | default(false) %}
-              {% set mostrar = item.name %}
-              {% if edit_item_id is defined and edit_item_id == item.id %}
-                <li>
-                  <form method="post" action="/listas/{{ lista.id }}/itens/{{ item.id }}/editar">
-                    <label for="item-nome">Nome do item</label>
-                    <input id="item-nome" name="nome" maxlength="101" value="{{ item_form_name }}">
-                    <label for="item-quantidade">Quantidade</label>
-                    <input id="item-quantidade" name="quantidade" maxlength="201" value="{{ item_form_quantity }}">
-                    <button type="submit">Salvar item</button>
-                  </form>
-                  <a href="/listas/{{ lista.id }}">Cancelar</a>
-                </li>
-              {% else %}
-                <li{% if comprado %} style="text-decoration: line-through"{% endif %}>
-                  {{ item.name }}{% if item.quantity %} — {{ item.quantity }}{% endif %}
-                  <form method="get" action="/listas/{{ lista.id }}/itens/{{ item.id }}/editar" style="display:inline">
-                    <button type="submit">Editar</button>
-                  </form>
-                  <form method="post" action="/listas/{{ lista.id }}/itens/{{ item.id }}/comprado" style="display:inline">
-                    <input type="hidden" name="comprado" value="{{ 'false' if comprado else 'true' }}">
-                    <button type="submit">{{ 'Desmarcar' if comprado else 'Marcar como comprado' }}</button>
-                  </form>
-                  <form method="post" action="/listas/{{ lista.id }}/itens/{{ item.id }}/remover" style="display:inline">
-                    <button type="submit">Remover</button>
-                  </form>
-                </li>
-              {% endif %}
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p>Nenhum item na lista.</p>
-        {% endif %}
-
-        {% if edit_item_id is not defined %}
-          <form method="post" action="/listas/{{ lista.id }}/itens">
-            <label for="novo-item-nome">Nome do item</label>
-            <input id="novo-item-nome" name="nome" maxlength="101" value="{{ item_form_name if item_form_name is defined else '' }}">
-            <label for="novo-item-quantidade">Quantidade</label>
-            <input id="novo-item-quantidade" name="quantidade" maxlength="201" value="{{ item_form_quantity if item_form_quantity is defined else '' }}">
-            <button type="submit">Adicionar item</button>
+        <section class="painel confirmacao" aria-labelledby="titulo-confirmacao">
+          <h2 id="titulo-confirmacao">Confirmar exclusão</h2>
+          <p>Deseja excluir a lista "{{ lista.name }}"?</p>
+          <form method="post" action="/listas/{{ lista.id }}/excluir">
+            <button class="botao perigo" type="submit">Confirmar exclusão</button>
           </form>
-        {% endif %}
+          <a class="botao secundario" href="/listas/{{ lista.id }}">Cancelar</a>
+        </section>
+      {% elif confirmar_reutilizacao %}
+        <section class="painel confirmacao">
+          <h2>Confirmar reutilização</h2>
+          <p>Deseja reutilizar a lista "{{ lista.name }}"?</p>
+          <form method="post" action="/listas/{{ lista.id }}/reutilizar">
+            <button type="submit">Confirmar reutilização</button>
+          </form>
+          <a class="botao secundario" href="/listas/{{ lista.id }}">Cancelar</a>
+        </section>
+      {% elif confirmar_limpeza %}
+        <section class="painel confirmacao">
+          <h2>Confirmar limpeza</h2>
+          <p>Deseja limpar os itens comprados da lista "{{ lista.name }}"?</p>
+          <form method="post" action="/listas/{{ lista.id }}/limpar-comprados">
+            <button type="submit">Confirmar limpeza</button>
+          </form>
+          <a class="botao secundario" href="/listas/{{ lista.id }}">Cancelar</a>
+        </section>
+      {% elif criar_lista %}
+        <section class="painel">
+          <h2>Nova lista</h2>
+          <form method="post" action="/listas/nova">
+            <label for="nome">Nome da lista</label>
+            <input id="nome" name="nome" maxlength="100" required value="{{ form_name if form_name is defined else '' }}">
+            <div class="acoes">
+              <button type="submit">Salvar</button>
+              <a class="botao secundario" href="/">Cancelar</a>
+            </div>
+          </form>
+        </section>
+      {% elif lista %}
+        <section class="painel">
+          <h2>{{ lista.name }}</h2>
+
+          {% if renomear_lista %}
+            <form method="post" action="/listas/{{ lista.id }}/renomear">
+              <label for="nome">Nome da lista</label>
+              <input id="nome" name="nome" maxlength="100" required value="{{ form_name }}">
+              <div class="acoes">
+                <button type="submit">Salvar</button>
+                <a class="botao secundario" href="/listas/{{ lista.id }}">Cancelar</a>
+              </div>
+            </form>
+          {% else %}
+            <div class="acoes">
+              <a class="botao secundario" href="/listas/{{ lista.id }}/renomear">Renomear</a>
+              <form method="get" action="/listas/{{ lista.id }}/excluir"><button class="botao secundario" type="submit">Excluir</button></form>
+              <form method="post" action="/listas/{{ lista.id }}/copiar"><button class="botao secundario" type="submit">Copiar lista</button></form>
+              <form method="get" action="/listas/{{ lista.id }}/reutilizar"><button class="botao secundario" type="submit">Reutilizar lista</button></form>
+              <form method="get" action="/listas/{{ lista.id }}/limpar-comprados"><button class="botao secundario" type="submit">Limpar comprados</button></form>
+            </div>
+          {% endif %}
+
+          <h3>Itens</h3>
+          {% if itens is defined and itens %}
+            <ul class="lista-itens">
+              {% for item in itens %}
+                {% set comprado = item.purchased | default(false) %}
+                {% if edit_item_id is defined and edit_item_id == item.id %}
+                  <li class="item">
+                    <form method="post" action="/listas/{{ lista.id }}/itens/{{ item.id }}/editar">
+                      <label for="item-nome">Nome do item</label>
+                      <input id="item-nome" name="nome" maxlength="100" required value="{{ item_form_name }}">
+                      <label for="item-quantidade">Quantidade</label>
+                      <input id="item-quantidade" name="quantidade" maxlength="200" value="{{ item_form_quantity }}">
+                      <div class="acoes">
+                        <button type="submit">Salvar item</button>
+                        <a class="botao secundario" href="/listas/{{ lista.id }}">Cancelar</a>
+                      </div>
+                    </form>
+                  </li>
+                {% else %}
+                  <li class="item{% if comprado %} comprado{% endif %}">
+                    <div>
+                      <strong>{{ item.name }}</strong>
+                      {% if item.quantity %}<span> — {{ item.quantity }}</span>{% endif %}
+                    </div>
+                    <div class="acoes item-acoes">
+                      <a class="botao secundario" href="/listas/{{ lista.id }}/itens/{{ item.id }}/editar">Editar</a>
+                      <form method="post" action="/listas/{{ lista.id }}/itens/{{ item.id }}/comprado">
+                        <input type="hidden" name="comprado" value="{{ 'false' if comprado else 'true' }}">
+                        <button class="botao secundario" type="submit">{{ 'Desmarcar' if comprado else 'Marcar como comprado' }}</button>
+                      </form>
+                      <form method="post" action="/listas/{{ lista.id }}/itens/{{ item.id }}/remover">
+                        <button class="botao secundario" type="submit">Remover</button>
+                      </form>
+                    </div>
+                  </li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="estado-vazio">
+              <p>Nenhum item na lista. Adicione o primeiro item para começar suas compras.</p>
+              {% if edit_item_id is not defined %}<a class="botao" href="#novo-item">Adicionar item</a>{% endif %}
+            </div>
+          {% endif %}
+
+          {% if edit_item_id is not defined %}
+            <form id="novo-item" class="form-item" method="post" action="/listas/{{ lista.id }}/itens">
+              <label for="novo-item-nome">Nome do item</label>
+              <input id="novo-item-nome" name="nome" maxlength="100" required value="{{ item_form_name if item_form_name is defined else '' }}">
+              <label for="novo-item-quantidade">Quantidade</label>
+              <input id="novo-item-quantidade" name="quantidade" maxlength="200" value="{{ item_form_quantity if item_form_quantity is defined else '' }}">
+              <div class="acoes">
+                <button type="submit">Salvar item</button>
+                <a class="botao secundario" href="/listas/{{ lista.id }}">Cancelar</a>
+              </div>
+            </form>
+          {% endif %}
+        </section>
       {% else %}
         {% if listas %}
-          <ul>
-            {% for item in listas %}
-              <li><a href="/listas/{{ item.id }}">{{ item.name }}</a></li>
-            {% endfor %}
-          </ul>
+          <section class="painel">
+            <h2>Minhas listas</h2>
+            <ul class="lista-itens">
+              {% for item in listas %}
+                <li class="item"><a href="/listas/{{ item.id }}">{{ item.name }}</a></li>
+              {% endfor %}
+            </ul>
+          </section>
         {% else %}
-          <p>Ainda não há listas.</p>
-          <a href="/listas/nova">Criar primeira lista</a>
+          <section class="estado-vazio painel">
+            <h2>Ainda não há listas</h2>
+            <p>Crie sua primeira lista para organizar suas compras.</p>
+            <a class="botao" href="/listas/nova">Criar primeira lista</a>
+          </section>
         {% endif %}
 
-        <form method="post" action="/listas/nova">
-          <label for="nome">Nome da lista</label>
-          <input id="nome" name="nome" maxlength="101" value="{{ form_name if form_name is defined else '' }}">
-          <button type="submit">Criar lista</button>
-        </form>
+        {% if not criar_lista %}
+          <section class="painel">
+            <h2>Nova lista</h2>
+            <form method="post" action="/listas/nova">
+              <label for="nome">Nome da lista</label>
+              <input id="nome" name="nome" maxlength="100" required value="{{ form_name if form_name is defined else '' }}">
+              <div class="acoes">
+                <button type="submit">Salvar</button>
+              </div>
+            </form>
+          </section>
+        {% endif %}
       {% endif %}
     </main>
   </body>
